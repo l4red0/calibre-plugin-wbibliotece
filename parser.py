@@ -137,9 +137,10 @@ class Parser():
         else:
             book_title = self.title
         if self.prefs['authors']:
-            book_authors = root.xpath( './/*[@id="work"]//div//div//div//table//div[@itemprop="creator"]')[0].text_content().strip()
-            book_authors = book_authors.partition('(')[0].strip()
-            book_authors = self.get_authors(book_authors, name_reversed=True)
+            book_authors = root.xpath( './/*[@id="work"]//div//div//div//table//div[@itemprop="creator"]')
+            if book_authors:
+                book_authors = book_authors[0].text_content().partition('(')[0].strip()
+                book_authors = self.get_authors(book_authors, name_reversed=True)
         else:
             book_authors = self.authors
         mi = Metadata(book_title, book_authors)
@@ -243,10 +244,14 @@ class Parser():
             author_match = not bool(authors_tokens) or not with_authors
             title_tag = root.find('.//div/a[@class="result-title"]')
 
-            book_title = root.find(
-                './/div/a[@class="result-title"]').text_content().strip().lower()
-            book_authors = root.find(
-                './/*[@id="results"]/div/div/div[@class="result-row result-creators"]/div[@class="content"]').text_content().strip().lower()
+            book_title = root.find('.//div/a[@class="result-title"]')
+            book_authors = root.find('.//*[@id="results"]/div/div/div[@class="result-row result-creators"]/div[@class="content"]')
+
+            if book_authors:
+                book_authors = book_authors.text_content().strip().lower()
+            if book_title:
+                book_title = book_title.text_content().strip().lower()
+
             for token in title_tokens:
                 if token in book_title:
                     title_match = True
