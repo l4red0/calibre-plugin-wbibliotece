@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# vim:fileencoding=UTF-8:ts=4:sw=4:sta:et:sts=4:ai
 from __future__ import (unicode_literals, division, absolute_import, print_function)
 from calibre.utils.config import JSONConfig
 from PyQt5.Qt import QWidget, QFormLayout, QVBoxLayout, QHBoxLayout, QGroupBox, \
@@ -128,11 +127,9 @@ pierwszy wynik może być niepoprawny')
         self.series.setChecked(prefs['series'])
         self.l2.addWidget(self.series)
 
-        '''
         self.publisher = QCheckBox('Wydawca')
         self.publisher.setChecked(prefs['publisher'])
         self.l2.addWidget(self.publisher)
-        '''
 
         self.isbn = QCheckBox('ISBN')
         self.isbn.setChecked(prefs['isbn'])
@@ -179,7 +176,7 @@ pierwszy wynik może być niepoprawny')
         prefs['title'] = self.title.isChecked()
         prefs['authors'] = self.authors.isChecked()
         prefs['pubdate'] = self.pubdate.isChecked()
-        # prefs['publisher'] = self.publisher.isChecked()
+        prefs['publisher'] = self.publisher.isChecked()
         prefs['series'] = self.series.isChecked()
         prefs['isbn'] = self.isbn.isChecked()
         prefs['comments'] = self.comments.isChecked()

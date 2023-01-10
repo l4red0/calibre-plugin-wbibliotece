@@ -1,2 +1,6 @@
-Version 1.0.1 - 09 Jan 2023
+[B]Version 1.0.2[/B] - 10 Jan 2023
+- Added pubdate. If there is no pubdate in book summary check publishers list for first edition and extract year
+- Added series to tags
+
+[B]Version 1.0.1[/B] - 09 Jan 2023
 - initial version

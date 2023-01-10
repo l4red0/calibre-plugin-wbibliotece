@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# vim:fileencoding=UTF-8:ts=4:sw=4:sta:et:sts=4:ai
 import re
 import copy
 import datetime
@@ -131,6 +130,12 @@ class Parser():
         tree = lxml.html.parse(resp)
         root = tree.getroot()
         book_tag = root.find('.//*[@id="work"]')
+        seriesTag = root.xpath('.//*[@id="work"]//div//div//div//table//th[starts-with(text(),"Wydane w seriach:")]//following-sibling::td//span')
+
+        publishersTag = root.xpath('.//*[@id="work"]//div//div//div//table//th[starts-with(text(),"Wydawcy:")]//following-sibling::td//div')
+        if not publishersTag:
+            publishersTag = root.xpath('.//table[@id="details"]//tr//th[starts-with(text(),"Wydawcy:")]//following-sibling::td/span[normalize-space(text())]')
+
         if self.prefs['title']:
             book_title = root.find('.//*[@id="work"]//div//div//div//div//div/h1/span[@class="main-title"]').text_content().strip()
             self.log.info('book_title', book_title)
@@ -144,21 +149,34 @@ class Parser():
         else:
             book_authors = self.authors
         mi = Metadata(book_title, book_authors)
+
+        if self.prefs['publisher']:
+            tag = publishersTag
+            if tag:
+                tag = tag[-1].text_content().strip()
+                tag = re.sub(r'\(.*?\)', '', tag)
+                mi.publisher = tag
+
         if self.prefs['pubdate']:
-            tag = root.xpath(
-                './/*[@id="work"]//div//div//div//table//th[starts-with(text(),"Wyd. w latach:")]//following-sibling::td')
+            tag = root.xpath('.//*[@id="work"]//div//div//div//table//th[starts-with(text(),"Wyd. w latach:")]//following-sibling::td')
             if tag:
                 tag = tag[0].text_content().strip()
                 tag = re.search(r"\b\d{4}\b", tag).group()
                 mi.pubdate = datetime.datetime(int(tag), 1, 1, tzinfo=utc_tz)
-                self.log.info('mi.pubdate', mi.pubdate)
+            elif publishersTag: # If no pubdate in main summary check publishers list for first edition and extract year
+                tag = publishersTag[-1].text_content().strip()
+                tag = re.findall(r"(\d{4})(?:-\d{4})?", tag)
+                mi.pubdate = datetime.datetime(int(tag[0]), 1, 1, tzinfo=utc_tz)
+
         if self.prefs['comments']:
             tagComments = root.xpath('.//*[@id="work"]//div//div//div//table//tr[@class="summary"]//div[contains(@class, "summary-preview")]')
             if tagComments:
                 tagComments = tagComments[0].text_content()
                 mi.comments = tagComments
+
         if self.prefs['languages']:
             mi.languages = ['pl']
+
         if self.prefs['rating']:
             tag = root.xpath('.//*[@id="work"]//div//div//div//table//span[@itemprop="ratingValue"]')
             if tag:
@@ -166,36 +184,38 @@ class Parser():
                 tag = float(tag)
                 tag = round(tag, 0)
                 mi.rating = tag
+
         if self.prefs['tags']:
             tag = root.xpath('//a[@class="tag"]/text()')
 
-            # Category as tag
-            cat = root.xpath(
-                './/*[@class="spreadme-product"]/span[starts-with(text(),"Kategoria:")]/following-sibling::span')
-            cat = [s.text_content().strip() for s in cat]
+            # Series as tag
+            ser = seriesTag
+            ser = [s.text_content().strip() for s in ser]
 
             # Genre as tag
-            gen = root.xpath(
-                './/*[@class="spreadme-product"]/span[starts-with(text(),"Gatunek:")]/following-sibling::span')
+            gen = root.xpath('.//*[@class="spreadme-product"]/span[starts-with(text(),"Gatunek:")]/following-sibling::span')
             gen = [s.text_content().strip() for s in gen]
 
             if tag:
                 mi.tags = tag
-            if cat:
-                mi.tags = mi.tags + cat
+            if ser:
+                mi.tags = mi.tags + ser
             if gen:
                 mi.tags = mi.tags + gen[0].split("/")
+
         if self.prefs['series']:
-            tag = root.xpath('.//*[@id="work"]//div//div//div//table//th[starts-with(text(),"Wydane w seriach:")]//following-sibling::td//span')
+            tag = seriesTag
             if tag:
                 tag = tag[0].text_content().strip()
                 mi.series = tag
+
         if self.prefs['isbn']:
             tag = root.xpath('.//*[@id="work"]//div//div//div//table//span[@data-ipub-search="isbn"]')
             if tag:
                 tag = tag[0].text_content().strip()
                 self.log.info('ISBN: ', tag)
                 mi.isbn = tag
+
         if self.prefs['identifier']:
             identifier_id = re.search(r"\b\d+\b", url).group()
             mi.set_identifier(self.plugin.IDENTIFIER, identifier_id)
