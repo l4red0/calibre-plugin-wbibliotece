@@ -11,6 +11,14 @@ __docformat__ = 'restructuredtext en'
 
 IDENTIFIER = 'wbibliotece'
 
+URL_SCHEME_TITLE = 'https://w.bibliotece.pl/search/?q=t%3A{title}'
+URL_SCHEME_TITLE_AUTHORS = 'https://w.bibliotece.pl/search/?q=o%3A{authors}+t%3A{title}'
+URL_SCHEME_ISBN = 'https://w.bibliotece.pl/search/?q=isbn%3A+{isbn}'
+
+AUTHORS_JOIN_DELIMETER = '+'
+AUTHORS_SPLIT_DELIMETER = '+'
+SKIP_AUTHORS = ('Unknown', 'Nieznany')
+
 prefs = JSONConfig('plugins/{}'.format(IDENTIFIER))
 prefs.defaults['max_results'] = 2
 prefs.defaults['authors_search'] = True
@@ -20,6 +28,7 @@ prefs.defaults['max_covers'] = 5
 prefs.defaults['threads'] = True
 prefs.defaults['max_threads'] = 3
 prefs.defaults['thread_delay'] = 0.1
+prefs.defaults['metamover'] = False
 
 # metadata settings
 prefs.defaults['title'] = True
@@ -62,10 +71,8 @@ pierwszy wynik może być niepoprawny')
         self.authors_search_label.setBuddy(self.authors_search)
         self.l.addRow(self.authors_search_label, self.authors_search)
 
-        self.only_first_author_label = QLabel(
-            'Używaj tylko pierwszego autora do wyszukiwania')
-        self.only_first_author_label.setToolTip(
-            'Używaj tylko pierwszego autora do wyszukiwań, obowiązuje tylko gdy wyszukiwanie z autorami jest aktywowane')
+        self.only_first_author_label = QLabel('Używaj tylko pierwszego autora do wyszukiwania')
+        self.only_first_author_label.setToolTip('Używaj tylko pierwszego autora do wyszukiwań, obowiązuje tylko gdy wyszukiwanie z autorami jest aktywowane')
         self.only_first_author = QCheckBox()
         self.only_first_author.setChecked(prefs['only_first_author'])
         self.only_first_author_label.setBuddy(self.only_first_author)
@@ -78,8 +85,7 @@ pierwszy wynik może być niepoprawny')
         self.l.addRow(self.covers_label, self.covers)
 
         self.max_covers_label = QLabel('Maksymalna liczba okładek')
-        self.max_covers_label.setToolTip(
-            'Maksymalna liczba pobieranych okładek')
+        self.max_covers_label.setToolTip('Maksymalna liczba pobieranych okładek')
         self.max_covers = QLineEdit(self)
         self.max_covers.setValidator(QIntValidator())
         self.max_covers.setText(str(prefs['max_covers']))
@@ -87,8 +93,7 @@ pierwszy wynik może być niepoprawny')
         self.l.addRow(self.max_covers_label, self.max_covers)
 
         self.threads_label = QLabel('Wielowątkowe przetwarzanie')
-        self.threads_label.setToolTip(
-            'Przyśpiesza pracę używając wielu wątków')
+        self.threads_label.setToolTip('Przyśpiesza pracę używając wielu wątków')
         self.threads = QCheckBox()
         self.threads.setChecked(prefs['threads'])
         self.threads_label.setBuddy(self.threads)
@@ -102,8 +107,7 @@ pierwszy wynik może być niepoprawny')
         self.l.addRow(self.max_threads_label, self.max_threads)
 
         self.thread_delay_label = QLabel('Opóźnienie wątku')
-        self.thread_delay_label.setToolTip(
-            'Czas oczekiwania na uruchomienie kolejnego wątku')
+        self.thread_delay_label.setToolTip('Czas oczekiwania na uruchomienie kolejnego wątku')
         self.thread_delay = QLineEdit(self)
         self.thread_delay.setValidator(QDoubleValidator())
         self.thread_delay.setText(str(prefs['thread_delay']))

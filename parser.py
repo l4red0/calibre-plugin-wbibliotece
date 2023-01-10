@@ -2,27 +2,16 @@
 import re
 import copy
 import datetime
-import urllib.request
 import urllib.parse
-import urllib.error
-import urllib.request
-import urllib.error
-import urllib.parse
-import http.cookiejar
 import socket
 
 import lxml.html
 
 from calibre.ebooks.metadata.book.base import Metadata
 from calibre.utils.date import utc_tz
-
-URL_SCHEME_TITLE = 'https://w.bibliotece.pl/search/?q=t%3A{title}'
-URL_SCHEME_TITLE_AUTHORS = 'https://w.bibliotece.pl/search/?q=o%3A{authors}+t%3A{title}'
-URL_SCHEME_ISBN = 'https://w.bibliotece.pl/search/?q=isbn%3A+{isbn}'
-
-AUTHORS_JOIN_DELIMETER = '+'
-AUTHORS_SPLIT_DELIMETER = '+'
-SKIP_AUTHORS = ('Unknown', 'Nieznany')
+from calibre_plugins.wbibliotece.network import Network
+from calibre_plugins.wbibliotece.utils import Utils
+from calibre_plugins.wbibliotece.config import URL_SCHEME_TITLE, URL_SCHEME_TITLE_AUTHORS, URL_SCHEME_ISBN, AUTHORS_JOIN_DELIMETER, AUTHORS_SPLIT_DELIMETER, SKIP_AUTHORS
 
 
 class Parser():
@@ -30,30 +19,12 @@ class Parser():
         self.plugin = plugin
         self.log = log
         self.timeout = timeout
-        self.cj = http.cookiejar.CookieJar()
-        self.opener = urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(self.cj))
-        urllib.request.install_opener(self.opener)
-        self.login()
+        self.network = Network(timeout, log)
+        self.utils = Utils
 
     @property
     def prefs(self):
         return self.plugin.prefs
-
-    def download_page(self, url):
-        try:
-            resp = urllib.request.urlopen(url, timeout=self.timeout)
-            self.log.info('INFO: Download complete: ' + url)
-            return resp
-        except urllib.error.URLError as e:
-            self.log.error('ERROR: Download failded: ' + url)
-            self.log.exception(e)
-            return
-        except socket.timeout as e:
-            self.log.exception(e)
-            self.log.error(
-                'ERROR: Download failded, request timed out: ' + url)
-            return
 
     def get_authors(self, authors, name_reversed=False):
         authors_list = []
@@ -102,9 +73,6 @@ class Parser():
 
         return (url, with_authors)
 
-    def login(self):
-        pass
-
     def parse_book_page_t(self, urls, result_queue, lock):
         while True:
             url = ''
@@ -121,7 +89,7 @@ class Parser():
 
     def parse_book_page(self, url):
         self.log.info('INFO: Downloading book page: ' + url)
-        resp = self.download_page(url)
+        resp = self.network.download_page(url)
         if not resp:
             return
 
@@ -132,9 +100,10 @@ class Parser():
         book_tag = root.find('.//*[@id="work"]')
         seriesTag = root.xpath('.//*[@id="work"]//div//div//div//table//th[starts-with(text(),"Wydane w seriach:")]//following-sibling::td//span')
 
-        publishersTag = root.xpath('.//*[@id="work"]//div//div//div//table//th[starts-with(text(),"Wydawcy:")]//following-sibling::td//div')
+        # Different publisher sources
+        publishersTag = root.xpath('.//*[@id="work"]//div//div//div//table//th[starts-with(text(), "Wydawc")]//following-sibling::td//div')
         if not publishersTag:
-            publishersTag = root.xpath('.//table[@id="details"]//tr//th[starts-with(text(),"Wydawcy:")]//following-sibling::td/span[normalize-space(text())]')
+            publishersTag = root.xpath('.//table[@id="details"]//tr//th[starts-with(text(),"Wydawc")]//following-sibling::td/span[normalize-space(text())]')
 
         if self.prefs['title']:
             book_title = root.find('.//*[@id="work"]//div//div//div//div//div/h1/span[@class="main-title"]').text_content().strip()
@@ -142,7 +111,7 @@ class Parser():
         else:
             book_title = self.title
         if self.prefs['authors']:
-            book_authors = root.xpath( './/*[@id="work"]//div//div//div//table//div[@itemprop="creator"]')
+            book_authors = root.xpath('.//*[@id="work"]//div//div//div//table//div[@itemprop="creator"]')
             if book_authors:
                 book_authors = book_authors[0].text_content().partition('(')[0].strip()
                 book_authors = self.get_authors(book_authors, name_reversed=True)
@@ -163,10 +132,11 @@ class Parser():
                 tag = tag[0].text_content().strip()
                 tag = re.search(r"\b\d{4}\b", tag).group()
                 mi.pubdate = datetime.datetime(int(tag), 1, 1, tzinfo=utc_tz)
-            elif publishersTag: # If no pubdate in main summary check publishers list for first edition and extract year
-                tag = publishersTag[-1].text_content().strip()
-                tag = re.findall(r"(\d{4})(?:-\d{4})?", tag)
-                mi.pubdate = datetime.datetime(int(tag[0]), 1, 1, tzinfo=utc_tz)
+            # If no pubdate in main summary check publishers list for first edition and extract year
+            elif publishersTag:
+                tag = self.utils.find_earliest_year(publishersTag)
+                if tag is not None:
+                    mi.pubdate = datetime.datetime(int(tag), 1, 1, tzinfo=utc_tz)
 
         if self.prefs['comments']:
             tagComments = root.xpath('.//*[@id="work"]//div//div//div//table//tr[@class="summary"]//div[contains(@class, "summary-preview")]')
@@ -248,7 +218,7 @@ class Parser():
         url, with_authors = self.create_search_page_url(title, authors_string, with_authors)
 
         self.log.info('INFO: Downloading search page: ' + url)
-        resp = self.download_page(url)
+        resp = self.network.download_page(url)
         if not resp:
             return results
 

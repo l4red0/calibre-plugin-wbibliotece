@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-from __future__ import (unicode_literals, division, absolute_import,
-                        print_function)
+from __future__ import (unicode_literals, division, absolute_import, print_function)
 __license__ = 'MIT'
 __copyright__ = '2023 l4red0'
-
 __docformat__ = 'restructuredtext en'
 
 import importlib
@@ -13,6 +11,7 @@ from queue import Queue
 from calibre.ebooks.metadata.sources.base import Source
 from calibre.utils.config import JSONConfig
 
+
 class Wbibliotece(Source):
     IDENTIFIER = 'wbibliotece'
     BOOK_PAGE_URL_SCHEME = 'https://w.bibliotece.pl/{}'
@@ -20,16 +19,16 @@ class Wbibliotece(Source):
     identified = False
 
     # generic plugin options
-    name                    = 'w.bibliotece.pl'
-    description             = 'Download and parse metadata from w.bibliotece.pl'
-    author                  = 'l4red0'
-    version                 = (1, 0, 0)
+    name = 'w.bibliotece.pl'
+    description = 'Download and parse metadata from w.bibliotece.pl'
+    author = 'l4red0'
+    version = (1, 0, 0)
     minimum_calibre_version = (5, 0, 0)
     supported_platforms = ['linux', 'osx', 'windows']
 
     # source plugin options
     capabilities = frozenset(['identify', 'cover'])
-    touched_fields = frozenset(['title', 'authors', 'pubdate', 'comments', 'languages', 'rating', 'tags', 'identifier:'+IDENTIFIER])
+    touched_fields = frozenset(['title', 'authors', 'pubdate', 'comments', 'languages', 'rating', 'tags', 'identifier:' + IDENTIFIER])
     has_html_comments = True
     supports_gzip_transfer_encoding = True
     can_get_multiple_covers = True
@@ -50,8 +49,7 @@ class Wbibliotece(Source):
         self.cache_identifier_to_cover_url('urls', [])
         parser_module = importlib.import_module('calibre_plugins.{}.parser'.format(self.IDENTIFIER))
         parser = parser_module.Parser(self, log, timeout)
-        urls = parser.parse_search_page(title, authors, with_authors=self.prefs['authors_search'],
-                                        only_first_author=self.prefs['only_first_author'])
+        urls = parser.parse_search_page(title, authors, with_authors=self.prefs['authors_search'], only_first_author=self.prefs['only_first_author'])
         t = self.get_book_url(identifiers)
         if t:
             urls.insert(0, t[2])
@@ -94,8 +92,8 @@ class Wbibliotece(Source):
             for cover in urls[:self.prefs['max_covers']]:
                 self.download_image(cover, timeout, log, result_queue)
 
-
     # plugin configuraton window
+
     def is_customizable(self):
         return True
 
