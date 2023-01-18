@@ -11,6 +11,7 @@ from calibre.ebooks.metadata.book.base import Metadata
 from calibre.utils.date import utc_tz
 from calibre_plugins.wbibliotece.network import Network
 from calibre_plugins.wbibliotece.utils import Utils
+from calibre_plugins.wbibliotece.metamover import Metamover
 from calibre_plugins.wbibliotece.config import URL_SCHEME_TITLE, URL_SCHEME_TITLE_AUTHORS, URL_SCHEME_ISBN, AUTHORS_JOIN_DELIMETER, AUTHORS_SPLIT_DELIMETER, SKIP_AUTHORS
 
 
@@ -21,6 +22,7 @@ class Parser():
         self.timeout = timeout
         self.network = Network(timeout, log)
         self.utils = Utils
+        self.metamover = Metamover
 
     @property
     def prefs(self):
@@ -142,6 +144,9 @@ class Parser():
             tagComments = root.xpath('.//*[@id="work"]//div//div//div//table//tr[@class="summary"]//div[contains(@class, "summary-preview")]')
             if tagComments:
                 tagComments = tagComments[0].text_content()
+                #METAMOVER
+                if self.prefs['metamoverenabled']:
+                    tagComments = tagComments + self.metamover.formatMetaMoverComment(root);
                 mi.comments = tagComments
 
         if self.prefs['languages']:

@@ -2,7 +2,8 @@
 from __future__ import (unicode_literals, division, absolute_import, print_function)
 from calibre.utils.config import JSONConfig
 from PyQt5.Qt import QWidget, QFormLayout, QVBoxLayout, QHBoxLayout, QGroupBox, \
-    QLabel, QLineEdit, QIntValidator, QDoubleValidator, QCheckBox
+    QLabel, QLineEdit, QIntValidator, QDoubleValidator, QCheckBox, QTabWidget
+from PyQt5.QtWidgets import QSizePolicy
 
 __license__ = 'MIT'
 __copyright__ = '2023 l4red0'
@@ -20,6 +21,7 @@ AUTHORS_SPLIT_DELIMETER = '+'
 SKIP_AUTHORS = ('Unknown', 'Nieznany')
 
 prefs = JSONConfig('plugins/{}'.format(IDENTIFIER))
+
 prefs.defaults['max_results'] = 2
 prefs.defaults['authors_search'] = True
 prefs.defaults['only_first_author'] = False
@@ -43,16 +45,40 @@ prefs.defaults['rating'] = True
 prefs.defaults['tags'] = True
 prefs.defaults['identifier'] = True
 
+# additional metadata (metamover)
+#prefs.defaults['metamoverenabled'] = False
+#prefs.defaults['translators'] = False
+
 
 class ConfigWidget(QWidget):
     def __init__(self):
         QWidget.__init__(self)
 
         self.main_layout = QVBoxLayout()
-        self.group_box = QGroupBox('Ustawienia ogólne')
-        self.group_box2 = QGroupBox('Pobieraj metadane')
-        self.l = QFormLayout()
-        self.l2 = QHBoxLayout()
+        self.group_box = QGroupBox('')
+        self.group_box2 = QGroupBox('')
+        self.l0 = QFormLayout()
+        self.l2 = QVBoxLayout()
+
+        # Create a QTabWidget
+        tabs = QTabWidget()
+
+        # Create the tabs and add the group boxes to them
+        tab1 = QWidget()
+        tab2 = QWidget()
+        tab1_layout = QVBoxLayout(tab1)
+        tab2_layout = QVBoxLayout(tab2)
+
+        tab1_layout.addWidget(self.group_box)
+        tab2_layout.addWidget(self.group_box2)
+
+        # Add the tabs to the QTabWidget
+        tabs.addTab(tab1, "Ustawienia ogólne")
+        tabs.addTab(tab2, "Rodzaj metadanych")
+        tabs.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+
+        # add the tabs to main layout
+        self.main_layout.addWidget(tabs)
 
         # general settings
         self.max_results_label = QLabel('Maksymalna liczba wyników')
@@ -62,27 +88,27 @@ pierwszy wynik może być niepoprawny')
         self.max_results.setValidator(QIntValidator())
         self.max_results.setText(str(prefs['max_results']))
         self.max_results_label.setBuddy(self.max_results)
-        self.l.addRow(self.max_results_label, self.max_results)
+        self.l0.addRow(self.max_results_label, self.max_results)
 
         self.authors_search_label = QLabel('Używaj autorów do wyszukiwań')
         self.authors_search_label.setToolTip('Wyszukuj uwzględniając autorów. Może poprawić trafność wyników, ale błędni autorzy spowodują brak wyników')
         self.authors_search = QCheckBox()
         self.authors_search.setChecked(prefs['authors_search'])
         self.authors_search_label.setBuddy(self.authors_search)
-        self.l.addRow(self.authors_search_label, self.authors_search)
+        self.l0.addRow(self.authors_search_label, self.authors_search)
 
         self.only_first_author_label = QLabel('Używaj tylko pierwszego autora do wyszukiwania')
         self.only_first_author_label.setToolTip('Używaj tylko pierwszego autora do wyszukiwań, obowiązuje tylko gdy wyszukiwanie z autorami jest aktywowane')
         self.only_first_author = QCheckBox()
         self.only_first_author.setChecked(prefs['only_first_author'])
         self.only_first_author_label.setBuddy(self.only_first_author)
-        self.l.addRow(self.only_first_author_label, self.only_first_author)
+        self.l0.addRow(self.only_first_author_label, self.only_first_author)
 
         self.covers_label = QLabel('Pobieraj okładki')
         self.covers = QCheckBox()
         self.covers.setChecked(prefs['covers'])
         self.covers_label.setBuddy(self.covers)
-        self.l.addRow(self.covers_label, self.covers)
+        self.l0.addRow(self.covers_label, self.covers)
 
         self.max_covers_label = QLabel('Maksymalna liczba okładek')
         self.max_covers_label.setToolTip('Maksymalna liczba pobieranych okładek')
@@ -90,21 +116,21 @@ pierwszy wynik może być niepoprawny')
         self.max_covers.setValidator(QIntValidator())
         self.max_covers.setText(str(prefs['max_covers']))
         self.max_covers_label.setBuddy(self.max_covers)
-        self.l.addRow(self.max_covers_label, self.max_covers)
+        self.l0.addRow(self.max_covers_label, self.max_covers)
 
         self.threads_label = QLabel('Wielowątkowe przetwarzanie')
         self.threads_label.setToolTip('Przyśpiesza pracę używając wielu wątków')
         self.threads = QCheckBox()
         self.threads.setChecked(prefs['threads'])
         self.threads_label.setBuddy(self.threads)
-        self.l.addRow(self.threads_label, self.threads)
+        self.l0.addRow(self.threads_label, self.threads)
 
         self.max_threads_label = QLabel('Maksymalna liczba wątków')
         self.max_threads = QLineEdit(self)
         self.max_threads.setValidator(QIntValidator())
         self.max_threads.setText(str(prefs['max_threads']))
         self.max_threads_label.setBuddy(self.max_threads)
-        self.l.addRow(self.max_threads_label, self.max_threads)
+        self.l0.addRow(self.max_threads_label, self.max_threads)
 
         self.thread_delay_label = QLabel('Opóźnienie wątku')
         self.thread_delay_label.setToolTip('Czas oczekiwania na uruchomienie kolejnego wątku')
@@ -112,9 +138,9 @@ pierwszy wynik może być niepoprawny')
         self.thread_delay.setValidator(QDoubleValidator())
         self.thread_delay.setText(str(prefs['thread_delay']))
         self.thread_delay_label.setBuddy(self.thread_delay)
-        self.l.addRow(self.thread_delay_label, self.thread_delay)
+        self.l0.addRow(self.thread_delay_label, self.thread_delay)
 
-        # metadata settings
+     # metadata settings
         self.title = QCheckBox('Tytuł')
         self.title.setChecked(prefs['title'])
         self.l2.addWidget(self.title)
@@ -159,10 +185,16 @@ pierwszy wynik może być niepoprawny')
         self.identifier.setChecked(prefs['identifier'])
         self.l2.addWidget(self.identifier)
 
-        self.group_box.setLayout(self.l)
+        #self.identifier = QCheckBox('Enable metaMOVER')
+        #self.identifier.setChecked(prefs['metamoverenabled'])
+        #self.l2.addWidget(self.metamoverenabled)
+
+        #self.identifier = QCheckBox('Tłumacze')
+        #self.identifier.setChecked(prefs['translators'])
+        #self.l2.addWidget(self.translators)
+
+        self.group_box.setLayout(self.l0)
         self.group_box2.setLayout(self.l2)
-        self.main_layout.addWidget(self.group_box)
-        self.main_layout.addWidget(self.group_box2)
         self.setLayout(self.main_layout)
 
     def save_settings(self):
@@ -173,8 +205,7 @@ pierwszy wynik może być niepoprawny')
         prefs['max_covers'] = int(self.max_covers.text())
         prefs['threads'] = self.threads.isChecked()
         prefs['max_threads'] = int(self.max_threads.text())
-        prefs['thread_delay'] = float(
-            self.thread_delay.text().replace(',', '.'))
+        prefs['thread_delay'] = float(self.thread_delay.text().replace(',', '.'))
 
         # metadata settings
         prefs['title'] = self.title.isChecked()
@@ -188,5 +219,9 @@ pierwszy wynik może być niepoprawny')
         prefs['rating'] = self.rating.isChecked()
         prefs['tags'] = self.tags.isChecked()
         prefs['identifier'] = self.identifier.isChecked()
+
+        # extended metadata (METAmove)
+        #prefs['metamoverenabled'] = self.metamoverenabled.isChecked()
+        #prefs['translators'] = self.translators.isChecked()
 
         return prefs
